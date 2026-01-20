@@ -37,7 +37,7 @@ class DatabaseSeeder extends Seeder
         User::create([
             'username' => 'superadmin',
             'email' => 'admin@omvms.com',
-            'password' => Hash::make('password'), // Password default
+            'password' => Hash::make('password123'), // Password default
             'role_id' => 1, // Pastikan ID 1 adalah superadmin (karena diinsert pertama)
             'employee_id' => null, // Super admin sistem tidak wajib punya data employee
             'is_active' => true,
