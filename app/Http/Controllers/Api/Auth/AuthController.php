@@ -1,45 +1,48 @@
 <?php
 
-namespace App\Http\Controllers\Api\Auth; 
+namespace App\Http\Controllers\Api\Auth;
+
 use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Hash;
 use App\Models\User;
 
 class AuthController extends Controller
 {
     public function login(Request $request)
     {
-        // 1. Validasi Input
+        // 1. Validasi
         $request->validate([
             'email' => 'required|email',
-            'password' => 'required',
+            'password' => 'required'
         ]);
 
-        // 2. Cek Kredensial (Email & Password)
-        if (!Auth::attempt($request->only('email', 'password'))) {
+        // 2. Ambil user
+        $user = User::where('email', $request->email)->first();
+
+        // 3. Cek user & password
+        if (! $user || ! Hash::check($request->password, $user->password)) {
             return response()->json([
                 'status' => 'error',
-                'message' => 'Email atau password salah.'
+                'message' => 'Email atau password salah'
             ], 401);
         }
 
-        // 3. Ambil Data User
-        $user = User::where('email', $request->email)->first();
-
-        // Cek apakah user aktif?
-        if (!$user->is_active) {
+        // 4. Cek status user
+        if (! $user->is_active) {
             return response()->json([
                 'status' => 'error',
-                'message' => 'Akun anda dinonaktifkan.'
+                'message' => 'Akun anda dinonaktifkan'
             ], 403);
         }
 
-        // 4. Generate Token Sanctum
-        // 'auth_token' adalah nama tokennya.
+        // 5. (Optional) hapus token lama
+        $user->tokens()->delete();
+
+        // 6. Generate token
         $token = $user->createToken('auth_token')->plainTextToken;
 
-        // 5. Return Response JSON
+        // 7. Response
         return response()->json([
             'status' => 'success',
             'message' => 'Login berhasil',
@@ -53,7 +56,6 @@ class AuthController extends Controller
 
     public function logout(Request $request)
     {
-        // Hapus token yang sedang dipakai
         $request->user()->currentAccessToken()->delete();
 
         return response()->json([
@@ -61,8 +63,7 @@ class AuthController extends Controller
             'message' => 'Logout berhasil'
         ]);
     }
-    
-    // API untuk cek user sedang login siapa (Profile)
+
     public function me(Request $request)
     {
         return response()->json([

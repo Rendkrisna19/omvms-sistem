@@ -6,34 +6,41 @@ use App\Http\Controllers\Api\Hr\DepartmentController;
 use App\Http\Controllers\Api\Hr\EmployeeController;
 use App\Http\Controllers\Api\Hr\UserController;
 
-// --- AUTHENTICATION ROUTES ---
-Route::post('/login', [AuthController::class, 'login']);
+// ============================================================
+// AUTHENTICATION (PUBLIC)
+// ============================================================
 
-Route::middleware(['auth:sanctum'])->group(function () {
+// Login API (TANPA CSRF, TANPA COOKIE)
+Route::post('/login', [AuthController::class, 'login'])
+    ->middleware('throttle:5,1'); // optional: cegah brute force
+
+
+// ============================================================
+// AUTHENTICATED ROUTES (SANCTUM BEARER TOKEN)
+// ============================================================
+Route::middleware('auth:sanctum')->group(function () {
+
+    // --- AUTH ---
     Route::post('/logout', [AuthController::class, 'logout']);
     Route::get('/me', [AuthController::class, 'me']);
 
     // ============================================================
-    // GROUP 1: HR MANAGEMENT SYSTEM (Untuk Frontend Dashboard HR)
-    // Prefix URL: /api/hr/departments, /api/hr/employees
+    // GROUP 1: HR MANAGEMENT SYSTEM
+    // Prefix: /api/hr/*
     // ============================================================
     Route::prefix('hr')->name('hr.')->group(function () {
-        
-        // 1. Master Departemen
+
+        // --- MASTER DATA ---
         Route::apiResource('departments', DepartmentController::class);
-        
-        // 2. Master Karyawan
         Route::apiResource('employees', EmployeeController::class);
-        
-        // 3. User Management (Akun Login)
         Route::apiResource('users', UserController::class);
-        
-        // Endpoint khusus Import/Export karyawan (Nanti)
-        Route::post('employees/import', [EmployeeController::class, 'import']);
+
+        // --- CUSTOM ACTION (HARUS DI ATAS jika bukan REST standar) ---
+        Route::post('employees/import', [EmployeeController::class, 'import'])
+            ->name('employees.import');
     });
 
     // ============================================================
-    // GROUP 2: VOUCHER SYSTEM (Untuk Frontend Voucher & POS)
-    // Prefix URL: /api/voucher/... (KITA SKIP DULU SESUAI REQUEST)
+    // GROUP 2: VOUCHER SYSTEM (SKIP)
     // ============================================================
 });
